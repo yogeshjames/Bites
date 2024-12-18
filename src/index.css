@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body { 
+    margin: 0; 
+    padding: 0; 
+} 
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+}
+
+@font-face {
+    font-family: 'Scandia';
+    src: url('./assets/fonts/ScandiaLine-Stencil.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+  }
+
+  @media (min-width: 768px) and (max-width: 1024px) {
+    body {
+      display: none;
+    }
+  }
+  
