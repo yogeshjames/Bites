@@ -35,16 +35,35 @@ const db = mongoose.connection;
 db.once('open', async () => {
   console.log('Database connected');
   const existingHotels = await Hotel.countDocuments();
-  if (existingHotels === 0) {
+  if (existingHotels === 1) {
+    // Create a hotel with a sample review
     await Hotel.create({
       hotelId: 'H0001',
       hotelName: 'Placeholder Hotel',
       currentRating: 0,
       numberOfUsersRated: 0,
       dishes: ['F001'],
-      thumbnailImage: "Uploads/H1000.jpg"
+      thumbnailImage: "Uploads/H1000.jpg",
+      reviews: [
+        {
+          user: 'John Doe',
+          comment: 'Great experience, would stay again!',
+          rating: 5,
+        },
+        {
+          user: 'Jane Smith',
+          comment: 'Nice hotel but could use more amenities.',
+          rating: 3,
+        },
+        {
+          user: 'Emily Davis',
+          comment: 'Had a pleasant stay, clean rooms.',
+          rating: 4,
+        }
+      ], // Added reviews here for testing
     });
-    console.log('Initialized hotels collection with a placeholder document');
+
+    console.log('Initialized hotels collection with a placeholder document and test reviews');
   } else {
     console.log('Hotels collection already initialized');
   }

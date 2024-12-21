@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
-//import CardF from "CardF";
-import {
-  Box,
-  Typography,
-  Tab,
-  Tabs,
-  CircularProgress,
-} from "@mui/material";
+import Navbar from "./Navbar";
+import Checkbox from "./CheckBox";
+import { useNavigate } from 'react-router-dom';
+import CustomSpinner from  "./CustomSpinner";
+import { useBreakpointValue } from '@chakra-ui/react';
+import { IconButton } from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import SearchIcon from '@mui/icons-material/Search';
+import { Box, Typography, Tab, Tabs, TextField, Card, CardContent, CardMedia } from "@mui/material";
 import PropTypes from "prop-types";
-
+import Reviews from './Reviews'; // Import the ReviewComponent
+import Loader from './Loader'; 
+import { fontGrid } from "@mui/material/styles/cssUtils";
 function CustomTabPanel(props) {
   const { children, value, index, ...other } = props;
 
@@ -46,28 +49,32 @@ const HotelDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [value, setValue] = useState(0); // State for active tab
+  const [searchQuery, setSearchQuery] = useState(""); // State for search query
+
+  // Add to cart size
+  const checkboxSize = useBreakpointValue({
+    base: "43px",  // For mobile or smaller screens
+    md: "30px",    // For medium screens and up
+  });
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchHotelDetails = async () => {
       try {
-        // Fetch hotel details
         const response = await axios.get(
           `http://localhost:5000/api/hotel/details/${hotelId}`
         );
-        setHotelDetails(response.data.data);
-       
-        // Fetch food details using dishes array
-        if (response.data.data.dishes && response.data.data.dishes.length > 0) {
+        const hotelData = response.data.data;
+        if (hotelData.dishes && hotelData.dishes.length > 0) {
           const foodResponse = await axios.post(
             "http://localhost:5000/api/food/details",
-            { dishIds: response.data.data.dishes }
+            { dishIds: hotelData.dishes }
           );
-          console.log("Fetched Food Details:", foodResponse.data);
-        } else {
-          console.log("No dishes available for this hotel.");
+          hotelData.dishes = foodResponse.data.data;
         }
+
+        setHotelDetails(hotelData);
       } catch (err) {
-        console.error("Error fetching hotel details:", err);
         setError("Failed to load hotel details.");
       } finally {
         setLoading(false);
@@ -81,6 +88,10 @@ const HotelDetails = () => {
     setValue(newValue);
   };
 
+  const filteredDishes = hotelDetails?.dishes?.filter((dish) =>
+    dish?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   if (loading)
     return (
       <Box
@@ -91,7 +102,7 @@ const HotelDetails = () => {
           minHeight: "100vh",
         }}
       >
-        <CircularProgress />
+        <CustomSpinner />
       </Box>
     );
 
@@ -103,63 +114,200 @@ const HotelDetails = () => {
     );
 
   return (
-    <Box sx={{ width: "100%", maxWidth: 800, mx: "auto", mt: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        {hotelDetails.hotelName}
-      </Typography>
-      <Typography variant="body1" gutterBottom>
-        Rating: {hotelDetails.currentRating} ({hotelDetails.numberOfUsersRated} reviews)
-      </Typography>
+    <Box>
+      <Navbar />
 
-      <Box sx={{ borderBottom: 1, borderColor: "divider", mt: 2 }}>
-        <Tabs value={value} onChange={handleTabChange} aria-label="hotel tabs">
-          <Tab label="Food Menu" {...a11yProps(0)} />
-          <Tab label="Reviews" {...a11yProps(1)} />
+      <Box sx={{ width: "100%", maxWidth: 800, mx: "auto", mt: 10 }}>
+        {hotelDetails.thumbnailImage && (
+          <Box sx={{ textAlign: "center", mb: 3, position: "relative" }}>
+            <img
+              src={`http://localhost:5000/${hotelDetails.thumbnailImage}`}
+              alt="Hotel Thumbnail"
+              style={{ width: "100%", borderRadius: 8, maxHeight: 400, objectFit: "cover" }}
+            />
+            <Box
+              sx={{
+                position: "absolute",
+                bottom: { xs: "28vh", md: "60vh" }, // Adjust bottom position based on screen size
+                right: { xs: "88vw", md: "60vw" }, // Adjust right position based on screen size
+                zIndex: 0, // Ensure it appears above the content
+              }}
+            >
+              <IconButton
+                onClick={() => {
+                  navigate(-1); // Go back to the previous page
+                }}
+                sx={{ color: "black" }}
+              >
+                <ArrowBackIcon sx={{ width: "40px" }} />
+              </IconButton>
+            </Box>
+          </Box>
+        )}
+
+<Box display="flex" alignItems="flex-end"    justifyContent="center" sx={{ textAlign: 'center' }}>
+<Typography
+        variant="h4"
+        gutterBottom
+        sx={{
+          fontWeight: "bold",
+          paddingTop:'6px',
+          fontFamily: "Nunito",
+            position:"relative" ,top:'11px',
+          marginRight: -1, // Space between loader and hotel name
+ // Ensures the text itself is centered
+        }}>
+        {hotelDetails.hotelName}
+        </Typography>
+      <Loader />
+    </Box>
+        <Typography
+          variant="h6"
+          gutterBottom
+          sx={{ textAlign: "center", color: "gray" , paddingTop:'7px', fontFamily:"Nunito"} }
+        >
+          Rating: {hotelDetails.currentRating} ({hotelDetails.numberOfUsersRated} reviews)
+        </Typography>
+
+        <Box sx={{ borderBottom: 1, borderColor: "divider", mt: 4 }}>
+        <Tabs
+          value={value}
+          onChange={handleTabChange}
+          aria-label="hotel tabs"
+          sx={{
+            fontFamily: "'Poppins', sans-serif", // Apply custom font
+            fontWeight: 600, // Make font weight bold
+            fontSize: "18px", // Adjust font size
+            letterSpacing: 0.5, // Optional: add letter spacing for clarity
+          }}
+        >
+          <Tab
+            label="Food Menu"
+            {...a11yProps(0)}
+            sx={{
+              fontFamily: "'Poppins', sans-serif", // Apply custom font
+              fontWeight: 600, // Bold text for this tab
+              fontSize: "16px", // Slightly smaller font size for tab labels
+              textTransform: "none", // Keep the text case as it is (no uppercase)
+            }}
+          />
+          <Tab
+            label="Reviews"
+            {...a11yProps(1)}
+            sx={{
+              fontFamily: "'Poppins', sans-serif", // Apply custom font
+              fontWeight: 600, // Bold text for this tab
+              fontSize: "16px", // Slightly smaller font size for tab labels
+              textTransform: "none", // Keep the text case as it is (no uppercase)
+            }}
+          />
         </Tabs>
       </Box>
 
-      {/* Food Menu Tab */}
-      <CustomTabPanel value={value} index={0}>
-        {hotelDetails.dishes && hotelDetails.dishes.length > 0 ? (
-          hotelDetails.dishes.map((dish, index) => (
-            <Box
-              key={index}
+        {/* Food Menu Tab */}
+        <CustomTabPanel value={value} index={0}>
+          <Box
+            sx={{
+              position: "relative",
+              marginBottom: { xs: 2, md: 3 },
+              marginTop: { xs: 2, md: 0 },
+            }}
+          >
+            {/* Search Bar for small screens */}
+            <TextField
+              value={searchQuery}
+              
+              onChange={(e) => setSearchQuery(e.target.value)}
+              variant="outlined"
+              
+              placeholder="Search dishes..."
               sx={{
-                mb: 2,
-                p: 2,
-                border: "1px solid #ddd",
-                borderRadius: 2,
+                width: { xs: "100%", md: "250px" },
+                // Full width for mobile, smaller width for larger screens
+                position: { xs: "relative", md: "absolute" },
+                right: { xs: 0, md: "20px" },
+                borderRadius: "20px",
+                "& .MuiOutlinedInput-root": {
+      borderRadius: "20px", 
+      fontFamily:"Muli",
+      backgroundColor:'grey.100',
+      height: "40px",// Apply rounding to the input field as well
+    }, // Position at the right for larger screens
               }}
-            >
-              <Typography variant="h6">{dish.name}</Typography>
-              <Typography>Price: ${dish.price}</Typography>
-            </Box>
-          ))
-        ) : (
-          <Typography>No menu available.</Typography>
-        )}
-      </CustomTabPanel>
+              InputProps={{
+                endAdornment: (
+                  <IconButton sx={{ padding: 0 }} onClick={() => {}}>
+                    <SearchIcon />
+                  </IconButton>
+                ),
+              }}
+            />
+          </Box>
 
-      {/* Reviews Tab */}
-      <CustomTabPanel value={value} index={1}>
-        {hotelDetails.reviews && hotelDetails.reviews.length > 0 ? (
-          hotelDetails.reviews.map((review, index) => (
-            <Box
-              key={index}
-              sx={{ mb: 2, p: 2, bgcolor: "#f9f9f9", borderRadius: 2 }}
-            >
-              <Typography variant="subtitle1" fontWeight="bold">
-                {review.user}
-              </Typography>
-              <Typography>{review.comment}</Typography>
-              <Typography color="textSecondary">Rating: {review.rating}</Typography>
+          {filteredDishes && filteredDishes.length > 0 ? (
+            <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 3 }}>
+              {filteredDishes.map((dish, index) => (
+                <Card
+                  key={index}
+                  sx={{
+                    display: "flex",
+                    maxWidth: 400,
+                    borderRadius: 2,
+                    flexDirection: "row",
+                    boxShadow: 3,
+                  }}
+                >
+                  <CardContent sx={{ display: "flex", flexDirection: "column", justifyContent: "space-between", flex: 1 }}>
+                    <Typography gutterBottom variant="h6" component="div"  fontFamily="Muli" fontWeight={'bold'}>
+                      {dish.name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary"  fontFamily="Quicksand">
+                      Price: ${dish.price}
+                    </Typography>
+                  </CardContent>
+
+                  <Box sx={{ position: "relative", flex: 1 }}>
+                    <Box 
+                      sx={{
+                        position: "absolute",
+                        bottom: 10,
+                        right: 10,
+                        zIndex: 1,
+                      }}
+                    >
+                      {/* The checkbox */}
+                      <Checkbox size={checkboxSize} /> 
+                    </Box>
+
+                    <CardMedia
+                      component="img"
+                      height="200"
+                      image={`http://localhost:5000/${dish.image}`}
+                      alt={dish.name}
+                      sx={{
+                        objectFit: "cover",
+                        borderRadius: 1,
+                        flex: 1,
+                        width: "100%",
+                        height: "100%",
+                      }}
+                    />
+                  </Box>
+                </Card>
+              ))}
             </Box>
-          ))
-        ) : (
-          <Typography>No reviews available.</Typography>
-        )}
-      </CustomTabPanel>
-      <CardF></CardF>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              No dishes available.
+            </Typography>
+          )}
+        </CustomTabPanel>
+
+        {/* Reviews Tab - Render the ReviewComponent */}
+        <CustomTabPanel value={value} index={1}>
+          <Reviews hotelId={hotelId} />
+        </CustomTabPanel>
+      </Box>
     </Box>
   );
 };

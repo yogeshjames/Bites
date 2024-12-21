@@ -14,8 +14,8 @@ function App() {
     setIsSignInClicked(!isSignInClicked);
   };
   return (<div display='block' >
-<Navbar onSignInClick={handleSignInClick} />
-<Home onOpenDialog={isSignInClicked ? true: false} />
+{/*<Navbar onSignInClick={handleSignInClick} />
+<Home onOpenDialog={isSignInClicked ? true: false} />*/}
 <Home2/>
   </div>
  
